@@ -1,7 +1,12 @@
 import discord
 import random
+from json import load
+from pathlib import Path
 
-TOKEN = 'OTU5ODY0ODE5MjMyNjk0MzMz.YkiFxg.vIG1ce3R6oaQ2ri7h43ZHa5Folk'
+with Path("config.json").open() as f:
+    config = load(f)
+
+TOKEN = config["token"]
 
 client = discord.Client()
 
