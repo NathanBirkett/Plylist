@@ -1,7 +1,7 @@
 # importing packages
 import random
 import time
-from pytube import YouTube
+import pytube
 import os
 import vlc
 
@@ -13,7 +13,10 @@ def new_playlist(name):
 def install_file(url, name, playlist):
     if os.path.exists(name + ".mp3"):
         os.remove(name + ".mp3")
-    yt = YouTube(url)
+    try:
+        yt = pytube.YouTube(url)
+    except:
+        print("connection error")
     video = yt.streams.filter(only_audio=True).first()
     destination = os.path.join("playlists", playlist)
     out_file = video.download(output_path=destination, filename=name)
@@ -25,17 +28,30 @@ def install_file(url, name, playlist):
 
 def play(playlist):
     song_list = os.listdir("playlists/" + playlist)
-    songs = random.sample(song_list, len(song_list))
-    create_list(songs, playlist)
-    print(songs)
-    play_song(playlist, songs, 0)
-    play(playlist)
+    print(song_list)
+    queue = create_list(song_list, playlist)
+    for num in range(0,len(queue)):
+        play_song(playlist, queue, num)
 
 
 def create_list(songs, playlist):
     music_list = random.sample(songs, len(songs))
+    song_length = {}
     for song in music_list:
-        print(music_length(song, playlist))
+        # print(music_length(song, playlist))
+        song_length[song] = music_length(song, playlist)
+    longest = song_length[max(song_length, key=song_length.get)]
+    for song in music_list:
+        element_time = music_list.count(song) * song_length[song]
+        print(song, element_time)
+        error = longest - element_time
+        print(error)
+        if error >= 60000:
+            print(song, "is to short")
+            music_list.insert(random.randrange(len(music_list)+1), song)
+    print(music_list)
+    return music_list
+    
 
 """
 ex: 3 songs: A: 1:30, B: 4:00, C: 1:00
@@ -91,5 +107,5 @@ def run():
     elif command == "quit":
         return
 
-
+print(pytube.__version__)
 run()
