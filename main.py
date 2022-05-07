@@ -7,7 +7,7 @@ import vlc
 
 
 def new_playlist(name):
-    os.mkdir(os.path.join("C:/Users/Nathan/PycharmProjects/practice/playlists/", name))
+    os.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "playlists", name))
 
 
 def install_file(url, name, playlist):
