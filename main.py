@@ -35,43 +35,33 @@ def play(playlist):
     for num in range(0,len(queue)):
         play_song(playlist, queue, num)
 
+def total_time(len_dict, song, list):
+    return len_dict[song] * list.count(song)
 
-def create_list(songs, playlist):
-    print("CREATING LIST")
-    music_list = random.sample(songs, len(songs))
+
+def create_list(music_list, playlist):
     song_length = {}
+    balance = 0
     for song in music_list:
         song_length[song] = music_length(song, playlist)
-    longest = max(song_length, key=song_length.get)
-    long_len = song_length[longest]
-    print(longest)
+    long_len = song_length[max(song_length, key=song_length.get)]
     new_list = copy.copy(music_list)
-    balance = 0
     while not balance == len(song_length):
         balance = 0
         for song in song_length:
-            if long_len < song_length.get(song) * music_list.count(song):
-                longest = song
-                long_len = song_length[longest] * music_list.count(longest)
-        print("longest: ", longest, "time: ", long_len)
+            if long_len < total_time(song_length, song, new_list):
+                long_len = total_time(song_length, song, new_list)
         for song in song_length:
-            print("ITERATING WITH ", song)
-            element_time = music_list.count(song) * song_length[song]
-            print(song, "total element time: ", element_time)
-            error = long_len - element_time
-            print(song, "error is: ", error)
+            error = long_len - total_time(song_length, song, new_list)
             if error >= 60000:
-                print("adding ", song)
-                balance -= 1
-                new_list.insert(random.randrange(len(new_list)+1), song)
+                new_list.append(song)
             else:
                 balance += 1
-            print(balance)
-        music_list = new_list
+    random.shuffle(new_list)
+    print(new_list)
     for song in song_length:
-        print(song, music_list.count(song))
-    print(music_list)
-    return music_list
+        print(song, new_list.count(song))
+    return new_list
     
 
 """
