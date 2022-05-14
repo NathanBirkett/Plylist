@@ -4,10 +4,16 @@ import time
 import pytube
 import os
 import vlc
+import json
 
 
 def new_playlist(name):
     os.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "playlists", name))
+    path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "song_lengths", name + ".json")
+    with open(path, 'w') as f:
+        f.write("{\n\n}")
+        f.close()
+        print("file has been created")
 
 
 def install_file(url, name, playlist):
@@ -24,6 +30,11 @@ def install_file(url, name, playlist):
     new_file = base + '.mp3'
     os.rename(out_file, new_file)
     print(yt.title + " has been successfully downloaded.")
+    with open(os.path.join("song_lengths", playlist + ".json"), 'r+') as f:
+        data = json.load(f)
+        data[name] = music_length(name, playlist)
+        f.seek(0)
+        json.dump(data, f, indent = 4)
 
 
 def play(playlist):
@@ -38,8 +49,10 @@ def create_list(songs, playlist):
     music_list = random.sample(songs, len(songs))
     song_length = {}
     for song in music_list:
-        # print(music_length(song, playlist))
-        song_length[song] = music_length(song, playlist)
+        # song_length[song] = music_length(song, playlist)
+        with open(os.path.join("song_lengths", playlist + ".json"), 'r+') as f:
+            data = json.load(f)
+            song_length[song] = data[song[0:len(song)-4]]
     longest = song_length[max(song_length, key=song_length.get)]
     for song in music_list:
         element_time = music_list.count(song) * song_length[song]
@@ -70,7 +83,7 @@ repeat for loop
 
 
 def music_length(song, playlist):
-    p = vlc.MediaPlayer("playlists/" + playlist + "/" + song)
+    p = vlc.MediaPlayer("playlists/" + playlist + "/" + song + ".mp3")
     p.play()
     time.sleep(1.5)
     length = p.get_length()
@@ -107,5 +120,4 @@ def run():
     elif command == "quit":
         return
 
-print(pytube.__version__)
 run()
