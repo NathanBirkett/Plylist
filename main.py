@@ -38,18 +38,18 @@ def install_file(url, name, playlist):
 
 
 def play(playlist):
+    playlists = list()
+    song_list = list()
     if playlist == "all":
         playlists = os.listdir("playlists")
-        song_list = list()
-        for directory in playlists:
-            if not directory == ".gitignore":
-                entries = os.listdir("playlists/" + directory)
-                for i in range(len(entries)):
-                    entries[i] = os.path.join(directory, entries[i])
-                print(entries)
-                song_list = song_list + entries
+        playlists.remove(".gitignore")
     else:
-        song_list = os.listdir("playlists/" + playlist)
+        playlists = playlist.split(', ')
+    for directory in playlists:
+        entries = os.listdir("playlists/" + directory)
+        for i in range(len(entries)):
+            entries[i] = os.path.join(directory, entries[i])
+        song_list = song_list + entries
     queue = create_list(song_list, playlist)
     play_song(playlist, queue, 0)
 
@@ -63,15 +63,12 @@ def create_list(songs, playlist):
     longest = song_length[max(song_length, key=song_length.get)]
     for song in music_list:
         element_time = music_list.count(song) * song_length[song]
-        print(song, element_time)
         error = longest - element_time
-        print(error)
         if error >= 60000:
-            print(song, "is to short")
             music_list.insert(random.randrange(len(music_list)+1), song)
     printable = list()
     for song in music_list:
-        printable.append(song.split('\\')[1][0:len(song.split('\\'))-6])
+        printable.append(song.split('\\')[1][0:len(song.split('\\')[1])-4])
     print(printable)
     return music_list
     
@@ -101,31 +98,29 @@ def music_length_vlc(song, playlist):
     return length
 
 def get_length(song, playlist):
-    if playlist == "all":
-            with open(os.path.join("song_lengths", song.split('\\')[0] + ".json"), 'r+') as f:
-                data = json.load(f)
-                name_with_mp3 = song.split('\\')[1]
-                return data[name_with_mp3[0:len(name_with_mp3)-4]]
-    else:
-        with open(os.path.join("song_lengths", playlist + ".json"), 'r+') as f:
-            data = json.load(f)
-            return data[song[0:len(song)-4]]
+    with open(os.path.join("song_lengths", song.split('\\')[0] + ".json"), 'r+') as f:
+        data = json.load(f)
+        return data[song.split('\\')[1][0:len(song.split('\\')[1])-4]]
 
 
 def play_song(playlist, songs, index):
     if index == len(songs):
         return
-    if playlist == "all":
-        p = vlc.MediaPlayer("playlists/" + songs[index])
-    else:
-        p = vlc.MediaPlayer("playlists/" + playlist + "/" + songs[index])
+    p = vlc.MediaPlayer("playlists/" + songs[index])
     p.audio_set_volume(50)
     p.play()
-    print("playing: " + songs[index])
+    print("playing: " + songs[index] + ", next: " + songs[index+1])
     time.sleep(get_length(songs[index], playlist)/1000)
     p.stop()
     index += 1
     play_song(playlist, songs, index)
+    
+def rename(playlist, song, name):
+    os.rename("playlists/"+playlist+"/"+song+".mp3", "playlists/"+playlist+"/"+name+".mp3")
+    with open("song_lengths/"+playlist+".json", 'r+') as f:
+        data = json.load(f)
+        for pair in data.items():
+            pair[name] = pair.pop(song)
 
 
 def run():
@@ -142,5 +137,8 @@ def run():
         return
     elif command == "quit":
         return
-
+    elif command == "rename":
+        rename(input("playlist: "), input("song: "), input("name: "))
+    elif command == "delete":
+        delete(input("playlist: "), input("song: "))
 run()
