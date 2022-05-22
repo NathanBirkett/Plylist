@@ -1,6 +1,7 @@
 # importing packages
 import random
 import time
+import playsound
 import pytube
 import os
 import vlc
@@ -121,6 +122,13 @@ def rename(playlist, song, name):
         data = json.load(f)
         for pair in data.items():
             pair[name] = pair.pop(song)
+            
+def delete(playlist, song):
+    os.remove("playlists/"+playlist+"/"+song+".mp3")
+    with open("song_lengths/"+playlist+".json", 'r+') as f:
+        data = json.load(f)
+        for value in data.values():
+            value.pop(song, None)
 
 
 def run():
