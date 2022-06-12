@@ -6,7 +6,10 @@ import pytube
 import os
 import vlc
 import json
-
+import glob
+import sys
+from msvcrt import getch
+import threading
 
 def new_playlist(name):
     os.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "playlists", name))
@@ -52,7 +55,12 @@ def play(playlist):
             entries[i] = os.path.join(directory, entries[i])
         song_list = song_list + entries
     queue = create_list(song_list, playlist)
-    play_song(playlist, queue, 0)
+    p = vlc.MediaPlayer("playlists/" + queue[0])
+    p.audio_set_volume(50)
+    print("starting t2")
+    t2 = threading.Thread(target=control, args=(p,))
+    t2.start()
+    play_song(p, playlist, queue, 0)
 
 
 def create_list(songs, playlist):
@@ -104,17 +112,24 @@ def get_length(song, playlist):
         return data[song.split('\\')[1][0:len(song.split('\\')[1])-4]]
 
 
-def play_song(playlist, songs, index):
+def play_song(p, playlist, songs, index):
     if index == len(songs):
         return
-    p = vlc.MediaPlayer("playlists/" + songs[index])
-    p.audio_set_volume(50)
+    p.set_media(vlc.Media("playlists/" + songs[index]))
+    # p.audio_set_volume(50)
     p.play()
     print("playing: " + songs[index] + ", next: " + songs[index+1])
-    time.sleep(get_length(songs[index], playlist)/1000)
+        
+    # time.sleep(get_length(songs[index], playlist)/1000)
+    timer = time.time() + get_length(songs[index], playlist)/1000
+    while True:
+        if time.time() >= timer and p.is_playing():
+            break
+    print("playing next song")
     p.stop()
     index += 1
-    play_song(playlist, songs, index)
+    print(index)
+    play_song(p, playlist, songs, index)
     
 def rename(playlist, song, name):
     os.rename("playlists/"+playlist+"/"+song+".mp3", "playlists/"+playlist+"/"+name+".mp3")
@@ -124,12 +139,28 @@ def rename(playlist, song, name):
             pair[name] = pair.pop(song)
             
 def delete(playlist, song):
-    os.remove("playlists/"+playlist+"/"+song+".mp3")
     with open("song_lengths/"+playlist+".json", 'r+') as f:
         data = json.load(f)
-        for value in data.values():
-            value.pop(song, None)
-
+        for pair in data.items():
+            pair.pop(song)
+        print(data)
+    os.remove("playlists/"+playlist+"/"+song+".mp3")
+    
+def control(p):
+    while True:
+        command = input("command: ")
+        # if command == "skip":
+        #     p.stop()
+        #     index += 1
+        #     play_song(playlist, songs, index)
+        #     break
+        if command == "stop":
+            p.stop()
+            break
+        elif command in ["pause", "resume"]:
+            print("pausing")
+            p.pause()
+        continue
 
 def run():
     command = input("command: ")
@@ -147,6 +178,10 @@ def run():
         return
     elif command == "rename":
         rename(input("playlist: "), input("song: "), input("name: "))
+        run()
     elif command == "delete":
         delete(input("playlist: "), input("song: "))
-run()
+        run()
+# run()
+if __name__ == "__main__":
+    run()
