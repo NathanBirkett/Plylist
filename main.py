@@ -1,14 +1,10 @@
 # importing packages
 import random
 import time
-import playsound
 import pytube
 import os
 import vlc
 import json
-import glob
-import sys
-from msvcrt import getch
 import threading
 
 def new_playlist(name):
@@ -67,7 +63,6 @@ def create_list(songs, playlist):
     music_list = random.sample(songs, len(songs))
     song_length = {}
     for song in music_list:
-        # song_length[song] = music_length(song, playlist)
         song_length[song] = get_length(song, playlist)
     longest = song_length[max(song_length, key=song_length.get)]
     for song in music_list:
@@ -79,23 +74,8 @@ def create_list(songs, playlist):
     for song in music_list:
         printable.append(song.split('\\')[1][0:len(song.split('\\')[1])-4])
     print(printable)
+    print(len(printable))
     return music_list
-    
-
-"""
-ex: 3 songs: A: 1:30, B: 4:00, C: 1:00
-sample random (A, C, B)
-find longest element (B)
-
-for each element in sample:         (A)     (B)     (C)
-    sum total element time          (1:30)  (4:00)  (1:00)
-    error = longest - el_time       (2:30)  (0)     (3:00)
-    if error < 60000:               (no)    (yes)   (no)
-        nothing
-    else:
-        randomly insert duplicate of element    (A, A, C, C, A, B, C, C)
-repeat for loop
-"""
 
 
 def music_length_vlc(song, playlist):
@@ -116,11 +96,8 @@ def play_song(p, playlist, songs, index):
     if index == len(songs):
         return
     p.set_media(vlc.Media("playlists/" + songs[index]))
-    # p.audio_set_volume(50)
     p.play()
     print("playing: " + songs[index] + ", next: " + songs[index+1])
-        
-    # time.sleep(get_length(songs[index], playlist)/1000)
     timer = time.time() + get_length(songs[index], playlist)/1000
     while True:
         if time.time() >= timer and p.is_playing():
@@ -149,11 +126,6 @@ def delete(playlist, song):
 def control(p):
     while True:
         command = input("command: ")
-        # if command == "skip":
-        #     p.stop()
-        #     index += 1
-        #     play_song(playlist, songs, index)
-        #     break
         if command == "stop":
             p.stop()
             break
@@ -182,6 +154,5 @@ def run():
     elif command == "delete":
         delete(input("playlist: "), input("song: "))
         run()
-# run()
 if __name__ == "__main__":
     run()
