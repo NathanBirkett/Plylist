@@ -3,14 +3,17 @@ import random
 import time
 import pytube
 import os
-# os.add_dll_directory(r'C:\Program Files\VideoLAN\VLC')  
 import vlc
 import json
 import threading
 
-print(vlc.__file__)
 def new_playlist(name):
-    os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "playlists", name))
+    os.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "playlists", name))
+    path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "song_lengths", name + ".json")
+    with open(path, 'w') as f:
+        f.write("{\n\n}")
+        f.close()
+        print("file has been created")
 
 
 def install_file(url, name, playlist):
@@ -27,22 +30,38 @@ def install_file(url, name, playlist):
     new_file = base + '.mp3'
     os.rename(out_file, new_file)
     print(yt.title + " has been successfully downloaded.")
+    with open(os.path.join("song_lengths", playlist + ".json"), 'r+') as f:
+        data = json.load(f)
+        data[name] = music_length_vlc(name, playlist)
+        f.seek(0)
+        json.dump(data, f, indent = 4)
 
 
 def play(playlist):
-    song_list = os.listdir("playlists/" + playlist)
-    print(song_list)
+    playlists = list()
+    song_list = list()
+    if playlist == "all":
+        playlists = os.listdir("playlists")
+        playlists.remove(".gitignore")
+    else:
+        playlists = playlist.split(', ')
+    for directory in playlists:
+        entries = os.listdir("playlists/" + directory)
+        for i in range(len(entries)):
+            entries[i] = os.path.join(directory, entries[i])
+        song_list = song_list + entries
     queue = create_list(song_list, playlist)
-    for num in range(0,len(queue)):
-        play_song(playlist, queue, num)
+    p = vlc.MediaPlayer("playlists/" + queue[0])
+    p.audio_set_volume(50)
+    print("starting t2")
+    t2 = threading.Thread(target=control, args=(p,))
+    t2.start()
+    play_song(p, playlist, queue, 0)
 
-def total_time(len_dict, song, list):
-    return len_dict[song] * list.count(song)
 
-
-def create_list(music_list, playlist):
+def create_list(songs, playlist):
+    music_list = random.sample(songs, len(songs))
     song_length = {}
-    balance = 0
     for song in music_list:
         song_length[song] = get_length(song, playlist)
     longest = song_length[max(song_length, key=song_length.get)]
@@ -59,16 +78,21 @@ def create_list(music_list, playlist):
     return music_list
 
 
-def music_length(song, playlist):
-    p = vlc.MediaPlayer("playlists/" + playlist + "/" + song)
+def music_length_vlc(song, playlist):
+    p = vlc.MediaPlayer("playlists/" + playlist + "/" + song + ".mp3")
     p.play()
     time.sleep(1.5)
     length = p.get_length()
     p.stop()
     return length
 
+def get_length(song, playlist):
+    with open(os.path.join("song_lengths", song.split('\\')[0] + ".json"), 'r+') as f:
+        data = json.load(f)
+        return data[song.split('\\')[1][0:len(song.split('\\')[1])-4]]
 
-def play_song(playlist, songs, index):
+
+def play_song(p, playlist, songs, index):
     if index == len(songs):
         return
     p.set_media(vlc.Media("playlists/" + songs[index]))
