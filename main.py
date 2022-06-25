@@ -3,6 +3,7 @@ import random
 import time
 import pytube
 import os
+import sys
 import vlc
 import json
 import threading
@@ -128,6 +129,8 @@ def control(p):
         command = input("command: ")
         if command == "stop":
             p.stop()
+            run()
+            sys.exit("stopping thread")
             break
         elif command in ["pause", "resume"]:
             print("pausing")
@@ -144,15 +147,15 @@ def run():
         run()
     elif command == "play":
         play(input("playlist: "))
-    elif command == "stop":
-        return
     elif command == "quit":
-        return
+        os._exit(0)
     elif command == "rename":
         rename(input("playlist: "), input("song: "), input("name: "))
         run()
     elif command == "delete":
         delete(input("playlist: "), input("song: "))
+    else:
+        print("invalid command")
         run()
 if __name__ == "__main__":
     run()
