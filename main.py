@@ -92,16 +92,17 @@ def get_length(song, playlist):
         data = json.load(f)
         return data[song.split('\\')[1][0:len(song.split('\\')[1])-4]]
 
-
+endTime = None
 def play_song(p, playlist, songs, index):
     if index == len(songs):
         return
     p.set_media(vlc.Media("playlists/" + songs[index]))
     p.play()
     print("playing: " + songs[index] + ", next: " + songs[index+1])
-    timer = time.time() + get_length(songs[index], playlist)/1000
+    global endTime
+    endTime = time.time() + get_length(songs[index], playlist)/1000
     while True:
-        if time.time() >= timer and p.is_playing():
+        if time.time() >= endTime and p.is_playing():
             break
     print("playing next song")
     p.stop()
@@ -125,6 +126,7 @@ def delete(playlist, song):
     os.remove("playlists/"+playlist+"/"+song+".mp3")
     
 def control(p):
+    timer = None
     while True:
         command = input("command: ")
         if command == "stop":
@@ -132,8 +134,15 @@ def control(p):
             run()
             sys.exit("stopping thread")
             break
-        elif command in ["pause", "resume"]:
+        elif command == "pause":
             print("pausing")
+            timer = time.time()
+            p.pause()
+        elif command == "resume":
+            print("resuming")
+            timer = time.time() - timer
+            global endTime
+            endTime += timer
             p.pause()
         continue
 
