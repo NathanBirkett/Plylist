@@ -102,7 +102,8 @@ def play_song(p, playlist, songs, index):
     global endTime
     endTime = time.time() + get_length(songs[index], playlist)/1000
     while True:
-        if time.time() >= endTime and p.is_playing():
+        time.sleep(1)
+        if time.time() >= endTime:
             break
     print("playing next song")
     p.stop()
@@ -118,16 +119,15 @@ def rename(playlist, song, name):
             pair[name] = pair.pop(song)
             
 def delete(playlist, song):
-    with open("song_lengths/"+playlist+".json", 'r+') as f:
-        data = json.load(f)
-        for pair in data.items():
-            pair.pop(song)
-        print(data)
+    obj = json.load(open("song_lengths/"+playlist+".json"))
+    obj.pop(song)
+    open("song_lengths/"+playlist+".json", "w").write(json.dumps(obj, sort_keys = True, indent = 4, separators = (',', ': ')))
     os.remove("playlists/"+playlist+"/"+song+".mp3")
     
 def control(p):
     timer = None
     while True:
+        global endTime
         command = input("command: ")
         if command == "stop":
             p.stop()
@@ -137,11 +137,11 @@ def control(p):
         elif command == "pause":
             print("pausing")
             timer = time.time()
+            endTime = 9999999999999999999999999999999999999
             p.pause()
         elif command == "resume":
             print("resuming")
             timer = time.time() - timer
-            global endTime
             endTime += timer
             p.pause()
         continue
