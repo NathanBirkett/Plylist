@@ -8,6 +8,10 @@ import vlc
 import json
 import threading
 
+endTime = None    
+paused = False
+volume = 50
+
 def new_playlist(name):
     os.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "playlists", name))
     path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "song_lengths", name + ".json")
@@ -53,7 +57,7 @@ def play(playlist):
         song_list = song_list + entries
     queue = create_list(song_list, playlist)
     p = vlc.MediaPlayer("playlists/" + queue[0])
-    p.audio_set_volume(50)
+    p.audio_set_volume(volume)
     print("starting t2")
     t2 = threading.Thread(target=control, args=(p,))
     t2.start()
@@ -92,7 +96,6 @@ def get_length(song, playlist):
         data = json.load(f)
         return data[song.split('\\')[1][0:len(song.split('\\')[1])-4]]
 
-endTime = None
 def play_song(p, playlist, songs, index):
     if index == len(songs):
         return
@@ -106,6 +109,8 @@ def play_song(p, playlist, songs, index):
         global paused
         if time.time() >= endTime and not paused:
             break
+        p.audio_set_volume(volume)
+        
     print("playing next song")
     p.stop()
     index += 1
@@ -124,13 +129,13 @@ def delete(playlist, song):
     obj.pop(song)
     open("song_lengths/"+playlist+".json", "w").write(json.dumps(obj, sort_keys = True, indent = 4, separators = (',', ': ')))
     os.remove("playlists/"+playlist+"/"+song+".mp3")
-    
-paused = False
+
 def control(p):
     timer = None
     while True:
         global endTime
         global paused
+        global volume
         command = input("command: ")
         if command == "stop":
             p.stop()
@@ -148,6 +153,10 @@ def control(p):
             timer = time.time() - timer
             endTime += timer
             p.pause()
+        elif command == "-":
+            volume = volume - 10
+        elif command == "+":
+            volume = volume + 10
         continue
 
 def run():
