@@ -103,7 +103,8 @@ def play_song(p, playlist, songs, index):
     endTime = time.time() + get_length(songs[index], playlist)/1000
     while True:
         time.sleep(1)
-        if time.time() >= endTime:
+        global paused
+        if time.time() >= endTime and not paused:
             break
     print("playing next song")
     p.stop()
@@ -124,10 +125,12 @@ def delete(playlist, song):
     open("song_lengths/"+playlist+".json", "w").write(json.dumps(obj, sort_keys = True, indent = 4, separators = (',', ': ')))
     os.remove("playlists/"+playlist+"/"+song+".mp3")
     
+paused = False
 def control(p):
     timer = None
     while True:
         global endTime
+        global paused
         command = input("command: ")
         if command == "stop":
             p.stop()
@@ -136,10 +139,11 @@ def control(p):
             break
         elif command == "pause":
             print("pausing")
+            paused = True
             timer = time.time()
-            endTime = 9999999999999999999999999999999999999
             p.pause()
         elif command == "resume":
+            paused = False
             print("resuming")
             timer = time.time() - timer
             endTime += timer
