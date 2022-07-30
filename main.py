@@ -7,6 +7,7 @@ import sys
 import vlc
 import json
 import threading
+from pydub import AudioSegment
 
 endTime = None    
 paused = False
@@ -22,25 +23,38 @@ def new_playlist(name):
 
 
 def install_file(url, name, playlist):
-    if os.path.exists(name + ".mp3"):
-        os.remove(name + ".mp3")
+    if os.path.exists("mp3playlists/" + playlist + "/" + name + ".mp3"):
+        os.remove("mp3playlists/" + playlist + "/" + name + ".mp3")
     try:
         yt = pytube.YouTube(url)
     except:
         print("connection error")
     video = yt.streams.filter(only_audio=True).first()
-    destination = os.path.join("playlists", playlist)
+    destination = os.path.join("mp3playlists", playlist)
     out_file = video.download(output_path=destination, filename=name)
     base, ext = os.path.splitext(out_file)
     new_file = base + '.mp3'
     os.rename(out_file, new_file)
+    rawsound = AudioSegment.from_file("mp3playlists/" + playlist + "/" + name + ".mp3", format="mp4")
+    changeInDBFS = -20.0 - rawsound.dBFS
+    normalizedsound = rawsound.apply_gain(changeInDBFS)
+    normalizedsound.export("playlists/"+playlist+"/"+name + ".wav", format="wav")
     print(yt.title + " has been successfully downloaded.")
     with open(os.path.join("song_lengths", playlist + ".json"), 'r+') as f:
         data = json.load(f)
         data[name] = music_length_vlc(name, playlist)
         f.seek(0)
         json.dump(data, f, indent = 4)
-
+        
+def analyze_songs():
+    playlists = os.listdir("playlists")
+    playlists.remove(".gitignore")
+    for playlist in playlists:
+        for song in os.listdir("playlists/"+playlist):
+            rawsound = AudioSegment.from_file("playlists/"+playlist+"/"+song, format="mp4")
+            changeInDBFS = -20.0 - rawsound.dBFS
+            normalizedsound = rawsound.apply_gain(changeInDBFS)
+            normalizedsound.export("wavplaylists/"+playlist+"/"+song[0:len(song)-4]+".wav", format="wav")
 
 def play(playlist):
     playlists = list()
@@ -84,7 +98,7 @@ def create_list(songs, playlist):
 
 
 def music_length_vlc(song, playlist):
-    p = vlc.MediaPlayer("playlists/" + playlist + "/" + song + ".mp3")
+    p = vlc.MediaPlayer("mp3playlists/" + playlist + "/" + song + ".mp3")
     p.play()
     time.sleep(1.5)
     length = p.get_length()
@@ -176,6 +190,16 @@ def run():
         run()
     elif command == "delete":
         delete(input("playlist: "), input("song: "))
+        run()
+    elif command == "reanalyze":
+        analyze_songs()
+        run()
+    elif command == "test":
+        rawsound = AudioSegment.from_file("playlists/misc/cheat codes vip.mp3", format="mp4")
+        changeInDBFS = -20.0 - rawsound.dBFS
+        normalizedsound = rawsound.apply_gain(changeInDBFS)
+        normalizedsound.export("NORMALIZED cheat codes vip.wav", format="wav")
+        run()
     else:
         print("invalid command")
         run()
