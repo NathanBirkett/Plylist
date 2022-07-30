@@ -12,6 +12,7 @@ from pydub import AudioSegment
 endTime = None    
 paused = False
 volume = 50
+stopped = False
 
 def new_playlist(name):
     os.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "playlists", name))
@@ -119,9 +120,12 @@ def play_song(p, playlist, songs, index):
     global endTime
     endTime = time.time() + get_length(songs[index], playlist)/1000
     while True:
-        time.sleep(1)
+        time.sleep(.1)
         global paused
+        global stopped
         if time.time() >= endTime and not paused:
+            break
+        if stopped:
             break
         p.audio_set_volume(volume)
         
@@ -129,7 +133,10 @@ def play_song(p, playlist, songs, index):
     p.stop()
     index += 1
     print(index)
-    play_song(p, playlist, songs, index)
+    if not stopped:
+        play_song(p, playlist, songs, index)
+    else:
+        run()
     
 def rename(playlist, song, name):
     os.rename("playlists/"+playlist+"/"+song+".mp3", "playlists/"+playlist+"/"+name+".mp3")
@@ -150,10 +157,11 @@ def control(p):
         global endTime
         global paused
         global volume
+        global stopped
         command = input("command: ")
         if command == "stop":
             p.stop()
-            run()
+            stopped = True
             sys.exit("stopping thread")
             break
         elif command == "pause":
