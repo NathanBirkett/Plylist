@@ -7,6 +7,9 @@ import sys
 import vlc
 import json
 import threading
+from threading import Thread
+from tkinter import messagebox
+from tkinter import *
 from pydub import AudioSegment
 
 endTime = None    
@@ -24,22 +27,25 @@ def new_playlist(name):
 
 
 def install_file(url, name, playlist):
-    if os.path.exists("mp3playlists/" + playlist + "/" + name + ".mp3"):
-        os.remove("mp3playlists/" + playlist + "/" + name + ".mp3")
+    if os.path.exists("playlists/" + playlist + "/" + name + ".mp3"):
+        os.remove("playlists/" + playlist + "/" + name + ".mp3")
     try:
         yt = pytube.YouTube(url)
+        print("yt defined")
     except:
         print("connection error")
     video = yt.streams.filter(only_audio=True).first()
-    destination = os.path.join("mp3playlists", playlist)
+    print("video defined")
+    destination = os.path.join("playlists", playlist)
     out_file = video.download(output_path=destination, filename=name)
     base, ext = os.path.splitext(out_file)
     new_file = base + '.mp3'
     os.rename(out_file, new_file)
-    rawsound = AudioSegment.from_file("mp3playlists/" + playlist + "/" + name + ".mp3", format="mp4")
+    print("renamed")
+    rawsound = AudioSegment.from_file("playlists/" + playlist + "/" + name + ".mp3", format="mp4")
     changeInDBFS = -20.0 - rawsound.dBFS
     normalizedsound = rawsound.apply_gain(changeInDBFS)
-    normalizedsound.export("playlists/"+playlist+"/"+name + ".wav", format="wav")
+    normalizedsound.export("playlists/"+playlist+"/"+name + ".mp3", format="mp3")
     print(yt.title + " has been successfully downloaded.")
     with open(os.path.join("song_lengths", playlist + ".json"), 'r+') as f:
         data = json.load(f)
@@ -71,6 +77,7 @@ def play(playlist):
             entries[i] = os.path.join(directory, entries[i])
         song_list = song_list + entries
     queue = create_list(song_list, playlist)
+    global p
     p = vlc.MediaPlayer("playlists/" + queue[0])
     p.audio_set_volume(volume)
     print("starting t2")
@@ -99,7 +106,7 @@ def create_list(songs, playlist):
 
 
 def music_length_vlc(song, playlist):
-    p = vlc.MediaPlayer("mp3playlists/" + playlist + "/" + song + ".mp3")
+    p = vlc.MediaPlayer("playlists/" + playlist + "/" + song + ".mp3")
     p.play()
     time.sleep(1.5)
     length = p.get_length()
