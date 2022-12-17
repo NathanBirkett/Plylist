@@ -6,6 +6,3 @@ class Song:
         
     def __str__(self):
         return self.name
-    
-    def getLength(self):
-        return self.length
