@@ -1,4 +1,5 @@
 playlists/
 mp3playlists/
 userdata/
-__pycache__/
+__pycache__
+songs/
